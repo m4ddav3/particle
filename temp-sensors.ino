@@ -147,9 +147,11 @@ void send_to_phant() {
     uint8_t attempts = 0;
     bool success = false;
     
+    String phant_request = phant.post();
+    
     for (int i = 0; i < 5; i++) {
         if (client.connect(server, PORT)) { // Connect to the server
-            byte written = client.print(phant.post());
+            byte written = client.print(phant_request);
             
             String tries = "";
             if (attempts > 0) {
@@ -172,6 +174,8 @@ void send_to_phant() {
     if (! success) {
         Particle.publish("send-to-phant", "Failed to send");
     }
+    
+    phant_request = "";
 }
 
 
@@ -234,14 +238,14 @@ void collect_ds_temps() {
         
         String device_info = "";
         for (byte i = 0; i < 8; i++) {
+            if (addr[i] < 16) device_info.concat('0');
             device_info.concat(String(addr[i], HEX));
         }
         
-        if (device_info.equals("28611b1f300a0")) sensor = 0;
-        else if (device_info.equals("289ef01e300d3")) sensor = 1;
-        else if (device_info.equals("28b8f31e30099")) sensor = 2;
-        else if (device_info.equals("28d7b1f30069"))  sensor = 3;
-        else continue;
+        if      (device_info.equals("28611b1f030000a0")) sensor = 0;
+        else if (device_info.equals("289ef01e030000d3")) sensor = 1;
+        else if (device_info.equals("28b8f31e03000099")) sensor = 2;
+        else if (device_info.equals("28d70b1f03000069")) sensor = 3;
 
 
         if (OneWire::crc8(addr, 7) != addr[7]) {
