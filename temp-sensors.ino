@@ -1,4 +1,5 @@
 #define WITH_DALLAS
+#define NO_ONE_WIRE_DEBUG
 
 // This #include statement was automatically added by the Particle IDE.
 #ifdef WITH_DALLAS
@@ -28,6 +29,16 @@ Adafruit_BME280 bme; // I2C
 #ifdef WITH_DALLAS
 #define DALLAS_PIN D2
 OneWire ds = OneWire(DALLAS_PIN);
+
+typedef byte OneWireAddress[8];
+
+OneWireAddress ds_sensors[4] = {
+    { 0x28, 0x61, 0x1b, 0x1f, 0x03, 0x00, 0x00, 0xa0 },
+    { 0x28, 0x9e, 0xf0, 0x1e, 0x03, 0x00, 0x00, 0xd3 },
+    { 0x28, 0xb8, 0xf3, 0x1e, 0x03, 0x00, 0x00, 0x99 },
+    { 0x28, 0xd7, 0x0b, 0x1f, 0x03, 0x00, 0x00, 0x69 },
+};
+
 void collect_ds_temps();
 #endif
 
@@ -190,10 +201,8 @@ void read_ds_sensor(byte addr[], byte data[], byte type_s) {
         ds.reset();
         
         ds.select(addr);
-        ds.write(0xBE,0);         // Read Scratchpad
-        if (type_s == 2) {
-            ds.write(0x00,0);       // The DS2438 needs a page# to read
-        }
+        ds.write(0xBE,0);                    // Read Scratchpad
+        if (type_s == 2) ds.write(0x00,0);   // The DS2438 needs a page# to read
         
         for ( i = 0; i < 9; i++) {           // we need 9 bytes
             data[i] = ds.read();
@@ -229,130 +238,46 @@ void collect_ds_temps() {
     wire_28b8f31e30099 = 0.0f;
     wire_28d7b1f30069  = 0.0f;
 
-    while (1) {
-        if (!ds.search(addr)) {
-            ds.reset_search();
-            //Particle.publish("one-wire", "nothing found?");
-            break;
-        }
+    byte sensor_index = 0;
+    
+    ds.reset();               // first clear the 1-wire bus
+    ds.skip();                // don't select any address, i.e. broadcast
+    ds.write(0x44, 0);        // or start conversion in powered mode (bus finishes low)
+
+    delay(800);
+    
+    for (sensor_index = 0; sensor_index < 4; sensor_index++) {
+        memcpy(addr, ds_sensors[sensor_index], sizeof(OneWireAddress));
         
+#ifdef ONE_WIRE_DEBUG
         String device_info = "";
         for (byte i = 0; i < 8; i++) {
             if (addr[i] < 16) device_info.concat('0');
             device_info.concat(String(addr[i], HEX));
         }
+        Particle.publish("one-wire-debug", device_info);
+#endif
         
-        if      (device_info.equals("28611b1f030000a0")) sensor = 0;
-        else if (device_info.equals("289ef01e030000d3")) sensor = 1;
-        else if (device_info.equals("28b8f31e03000099")) sensor = 2;
-        else if (device_info.equals("28d70b1f03000069")) sensor = 3;
-
-
-        if (OneWire::crc8(addr, 7) != addr[7]) {
-            device_info.concat(" :: bad CRC");
-            Particle.publish("one-wire", device_info);
-            continue;
-        }
-        
-          // the first ROM byte indicates which chip
-        switch (addr[0]) {
-            case 0x10:
-                //device_info.concat(" :: DS1820/DS18S20");
-                type_s = 1;
-                break;
-            case 0x28:
-                //device_info.concat(" :: DS18B20");
-                type_s = 0;
-                break;
-            case 0x22:
-                //device_info.concat(" :: DS1822");
-                type_s = 0;
-                break;
-            case 0x26:
-                //device_info.concat(" :: DS2438");
-                type_s = 2;
-                break;
-            default:
-                device_info.concat(" :: Unknown device type");
-                continue;
-        }
-        
-        ds.reset();               // first clear the 1-wire bus
-        ds.select(addr);          // now select the device we just found
-        // ds.write(0x44, 1);     // tell it to start a conversion, with parasite power on at the end
-        ds.write(0x44, 0);        // or start conversion in powered mode (bus finishes low)
-
-        delay(1000);
-        
-        //present = ds.reset();
-        //ds.select(addr);
-        //ds.write(0xB8,0);         // Recall Memory 0
-        //ds.write(0x00,0);         // Recall Memory 0
-        
-        // now read the scratch pad
-        
-        // present = ds.reset();
-        // ds.select(addr);
-        // ds.write(0xBE,0);         // Read Scratchpad
-        // if (type_s == 2) {
-        //     ds.write(0x00,0);       // The DS2438 needs a page# to read
-        // }
-        
-        // for ( i = 0; i < 9; i++) {           // we need 9 bytes
-        //     data[i] = ds.read();
-        // }
-        // if (OneWire::crc8(data, 8) != data[8]) {
-        //     uint8_t crc = OneWire::crc8(data, 8);
-        //     String foo = String("Bad CRC: Got ");
-        //     foo.concat(String(data[8], HEX));
-        //     foo.concat(", wanted");
-        //     foo.concat(String(crc, HEX));
-        //     Particle.publish("one-wire", foo);
-        // }
-        
-        read_ds_sensor(addr, data, type_s);
-
+        // Get temp
+        read_ds_sensor(addr, data, 0);
+        // Convert temp
         int16_t raw = (data[1] << 8) | data[0];
         if (type_s == 2) raw = (data[2] << 8) | data[1];
         byte cfg = (data[4] & 0x60);
+        // at lower res, the low bits are undefined, so let's zero them
+        if (cfg == 0x00) raw = raw & ~7; //  9 bit res,  93.75 ms
+        if (cfg == 0x20) raw = raw & ~3; // 10 bit res, 187.5 ms
+        if (cfg == 0x40) raw = raw & ~1; // 11 bit res, 375 ms
+        // default is 12 bit resolution, 750 ms conversion time
+        celsius = (float)raw * 0.0625;
         
-        switch (type_s) {
-            case 1:
-            raw = raw << 3; // 9 bit resolution default
-            if (data[7] == 0x10) {
-                // "count remain" gives full 12 bit resolution
-                raw = (raw & 0xFFF0) + 12 - data[6];
-            }
-            celsius = (float)raw * 0.0625;
-            break;
-            case 0:
-            // at lower res, the low bits are undefined, so let's zero them
-            if (cfg == 0x00) raw = raw & ~7; //  9 bit res,  93.75 ms
-            if (cfg == 0x20) raw = raw & ~3; // 10 bit res, 187.5 ms
-            if (cfg == 0x40) raw = raw & ~1; // 11 bit res, 375 ms
-            // default is 12 bit resolution, 750 ms conversion time
-            celsius = (float)raw * 0.0625;
-            break;
-            
-            case 2:
-            data[1] = (data[1] >> 3) & 0x1f;
-            if (data[2] > 127) {
-                celsius = (float)data[2] - ((float)data[1] * .03125);
-            }
-            else {
-                celsius = (float)data[2] + ((float)data[1] * .03125);
-            }
-        }
-        
-        switch (sensor) {
+        // Save temp
+        switch (sensor_index) {
             case 0: wire_28611b1f300a0 = celsius; break;
             case 1: wire_289ef01e300d3 = celsius; break;
             case 2: wire_28b8f31e30099 = celsius; break;
             case 3: wire_28d7b1f30069  = celsius; break;
         }
-        
-        //device_info.concat(String::format(" :: %0.2f °C", celsius));
-        //Particle.publish("one-wire", device_info);
     }
 }
 #endif
