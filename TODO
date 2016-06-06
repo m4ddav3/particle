@@ -1,0 +1,7 @@
+Considerations for future improvements
+
+- Allow management of sensors via Particle API
+  - Add/view/update/remove/list sensors
+  - Store the configuration in EEPROM
+    - For example, 1-wire dallas sensors need an ID, could allow set/get of precision/alarms
+
