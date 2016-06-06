@@ -63,6 +63,11 @@ double wire_28b8f31e30099;
 double wire_28d7b1f30069;
 
 void setup() {
+	// Set the oboard RGB LED to 25% brightness
+	RGB.control(true);
+	RGB.brightness(64);
+	RGB.control(false);
+	
 #ifdef WITH_DALLAS
     ds.reset_search();
     // TODO Probably want to issue a reset to all the 1-wire sensors?
