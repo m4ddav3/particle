@@ -1,10 +1,10 @@
 #define WITH_DALLAS
 #define NO_ONE_WIRE_DEBUG
 
-// This #include statement was automatically added by the Particle IDE.
 #ifdef WITH_DALLAS
 #include "OneWire/OneWire.h"
 #endif
+
 #include "SparkFun-Spark-Phant/SparkFun-Spark-Phant.h"
 #include "Adafruit_DHT/Adafruit_DHT.h"
 #include "Adafruit_BME280/Adafruit_BME280.h"
@@ -13,18 +13,15 @@ SYSTEM_MODE(AUTOMATIC);
 
 #define SAMPLE_DELAY_MINS 2
 
-// Example testing sketch for various DHT humidity/temperature sensors
-// Written by ladyada, public domain
-
-#define DHTPIN 6        // what pin we're connected to
-#define DHTTYPE DHT22	// DHT 22 (AM2302)
+#define DHTPIN  D6
+#define DHTTYPE DHT22
 // Connect pin 1 (on the left) of the sensor to +5V
 // Connect pin 2 of the sensor to whatever your DHTPIN is
 // Connect pin 4 (on the right) of the sensor to GROUND
 // Connect a 10K resistor from pin 2 (data) to pin 1 (power) of the sensor
 
 DHT dht(DHTPIN, DHTTYPE);
-Adafruit_BME280 bme; // I2C
+Adafruit_BME280 bme;
 
 #ifdef WITH_DALLAS
 #define DALLAS_PIN D2
@@ -42,12 +39,12 @@ OneWireAddress ds_sensors[4] = {
 void collect_ds_temps();
 #endif
 
-const char server[] = "192.168.1.88"; // Phant destination server
+const char server[] = "192.168.1.88";
 #define PORT 8080
-const char publicKey[]  = "db8bQQj2eAFDgK1w9NQJIj2Popr"; // Phant public key
-const char privateKey[] = "eeWeyy0MgLHnDOvPGqBYImyjnl9"; // Phant private key
+const char publicKey[]  = "db8bQQj2eAFDgK1w9NQJIj2Popr";
+const char privateKey[] = "eeWeyy0MgLHnDOvPGqBYImyjnl9";
 const char deleteKey[]  = "wNPNddRkx0hGe8o3lEQWHzaygYX";
-Phant phant(server, publicKey, privateKey); // Create a Phant object
+Phant phant(server, publicKey, privateKey);
 
 double temperature;
 double humidity;
@@ -97,12 +94,6 @@ void send_to_phant();
 int publish_minute = -1;
 
 void loop() {
-    // Wait a few seconds between measurements.
-
-    // Reading temperature or humidity takes about 250 milliseconds!
-    // Sensor readings may also be up to 2 seconds 'old' (its a 
-    // very slow sensor)
-	
 	if (publish_minute == -1 || publish_minute == Time.minute()) {
 	    
 	    // Moved the sample reading into here to try to improve the reading
@@ -117,13 +108,6 @@ void loop() {
 	    analog0 += analogRead(A0);
 	    analog0 /= 2;
 	    
-	    //Particle.publish("dht22-temperature", String::format("%0.1f °C", temperature));
-        //Particle.publish("dht22-humidity"   , String::format("%0.2f %%", humidity));
-        //Particle.publish("analog0"          , String(analog0));
-        //Particle.publish("bme-temperature"  , String::format("%0.2f °C", bme_temp));
-        //Particle.publish("bme-humidity"     , String::format("%0.2f %%", bme_hum));
-        //Particle.publish("bme-pressure"     , String::format("%0.2f hPa", bme_pres));
-        
         publish_minute = (Time.minute() + SAMPLE_DELAY_MINS) % 60;
         
 #ifdef WITH_DALLAS
@@ -133,17 +117,6 @@ void loop() {
 	}
 	
 	delay(5000);
-    
-	//pause_loop();
-}
-
-void pause_loop() {
-    int minute = (Time.minute() + 1) % 60;
-
-    while (Time.minute() != minute) {
-        //Particle.publish("debug", "minute="+String(minute)+", current="+String(Time.minute()));
-        delay(5000);
-    }
 }
 
 void send_to_phant() {
@@ -166,7 +139,7 @@ void send_to_phant() {
     String phant_request = phant.post();
     
     for (int i = 0; i < 5; i++) {
-        if (client.connect(server, PORT)) { // Connect to the server
+        if (client.connect(server, PORT)) {
             byte written = client.print(phant_request);
             
             String tries = "";
@@ -182,7 +155,6 @@ void send_to_phant() {
         }
         else {
             attempts++;
-            //Particle.publish("send-to-phant", "No connection");
         }
         delay(1000);
     }
