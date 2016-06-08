@@ -5,3 +5,6 @@ Considerations for future improvements
   - Store the configuration in EEPROM
     - For example, 1-wire dallas sensors need an ID, could allow set/get of precision/alarms
 
+- Search and report on found device IDs
+  - Particle.variable with a callback method which does a search and responds with all devices on all configured busses
+  - Is there a limit to the data size?
