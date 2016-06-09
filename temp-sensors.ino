@@ -59,6 +59,14 @@ double wire_289ef01e300d3;
 double wire_28b8f31e30099;
 double wire_28d7b1f30069;
 
+String one_wire_sensors;
+OneWireAddress one_wire_sensor_list[MIN_SENSOR_LIST_SIZE];
+uint8_t num_one_wire_sensors = 0;
+
+int one_wire_detect() {
+    // Search the bus and add found devices to one_wire_sensor_list
+}
+
 void setup() {
 	// Set the oboard RGB LED to 25% brightness
 	RGB.control(true);
@@ -76,6 +84,9 @@ void setup() {
     Particle.variable("bme-temp"   , bme_temp);
     Particle.variable("bme-hum"    , bme_hum);
     Particle.variable("bme-pres"   , bme_pres);
+    
+    Particle.variable("one-wire-sensors", one_wire_sensors, STRING);
+    Particle.function("one-wire-detect", one_wire_detect);
     
     //IPAddress myNetMask = WiFi.subnetMask();
     //Particle.publish("device-ip", String(myIP) + "/" + String(myNetMask));
