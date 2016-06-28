@@ -68,16 +68,16 @@ int one_wire_detect() {
 }
 
 void setup() {
-	// Set the oboard RGB LED to 25% brightness
-	RGB.control(true);
-	RGB.brightness(64);
-	RGB.control(false);
-	
+    // Set the oboard RGB LED to 25% brightness
+    RGB.control(true);
+    RGB.brightness(64);
+    RGB.control(false);
+    
 #ifdef WITH_DALLAS
     ds.reset_search();
     // TODO Probably want to issue a reset to all the 1-wire sensors?
 #endif
-
+    
     Particle.variable("temperature", temperature);
     Particle.variable("humidity"   , humidity);
     Particle.variable("analog0"    , analog0);
@@ -91,12 +91,12 @@ void setup() {
     //IPAddress myNetMask = WiFi.subnetMask();
     //Particle.publish("device-ip", String(myIP) + "/" + String(myNetMask));
     
-	dht.begin();
-	
-	if (!bme.begin(0x76)) {
-	    Particle.publish("No bme at 0x76");
-	    while (1) delay(1000);
-	};
+    dht.begin();
+    
+    if (!bme.begin(0x76)) {
+        Particle.publish("No bme at 0x76");
+        while (1) delay(1000);
+    };
 }
 
 void pause_loop();
@@ -105,29 +105,28 @@ void send_to_phant();
 int publish_minute = -1;
 
 void loop() {
-	if (publish_minute == -1 || publish_minute == Time.minute()) {
-	    
-	    // Moved the sample reading into here to try to improve the reading
-    	humidity    = (double) dht.getHumidity();
-	    temperature = (double) dht.getTempCelcius();
-	    
-	    bme_temp = (double) bme.readTemperature();
-	    bme_hum  = (double) bme.readHumidity();
-	    bme_pres = (double) (bme.readPressure() / 100.0F);
-	    
-	    analog0 = analogRead(A0);
-	    analog0 += analogRead(A0);
-	    analog0 /= 2;
-	    
+    if (publish_minute == -1 || publish_minute == Time.minute()) {
+        // Moved the sample reading into here to try to improve the reading
+        humidity    = (double) dht.getHumidity();
+        temperature = (double) dht.getTempCelcius();
+        
+        bme_temp = (double) bme.readTemperature();
+        bme_hum  = (double) bme.readHumidity();
+        bme_pres = (double) (bme.readPressure() / 100.0F);
+        
+        analog0 = analogRead(A0);
+        analog0 += analogRead(A0);
+        analog0 /= 2;
+        
         publish_minute = (Time.minute() + SAMPLE_DELAY_MINS) % 60;
         
 #ifdef WITH_DALLAS
         collect_ds_temps();
 #endif
         send_to_phant();
-	}
-	
-	delay(5000);
+    }
+    
+    delay(5000);
 }
 
 void send_to_phant() {
