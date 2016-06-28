@@ -105,29 +105,28 @@ void send_to_phant();
 int publish_minute = -1;
 
 void loop() {
-	if (publish_minute == -1 || publish_minute == Time.minute()) {
-	    
-	    // Moved the sample reading into here to try to improve the reading
-    	humidity    = (double) dht.getHumidity();
-	    temperature = (double) dht.getTempCelcius();
-	    
-	    bme_temp = (double) bme.readTemperature();
-	    bme_hum  = (double) bme.readHumidity();
-	    bme_pres = (double) (bme.readPressure() / 100.0F);
-	    
-	    analog0 = analogRead(A0);
-	    analog0 += analogRead(A0);
-	    analog0 /= 2;
-	    
+    if (publish_minute == -1 || publish_minute == Time.minute()) {
+        // Moved the sample reading into here to try to improve the reading
+        humidity    = (double) dht.getHumidity();
+        temperature = (double) dht.getTempCelcius();
+        
+        bme_temp = (double) bme.readTemperature();
+        bme_hum  = (double) bme.readHumidity();
+        bme_pres = (double) (bme.readPressure() / 100.0F);
+        
+        analog0 = analogRead(A0);
+        analog0 += analogRead(A0);
+        analog0 /= 2;
+        
         publish_minute = (Time.minute() + SAMPLE_DELAY_MINS) % 60;
         
 #ifdef WITH_DALLAS
         collect_ds_temps();
 #endif
         send_to_phant();
-	}
-	
-	delay(5000);
+    }
+    
+    delay(5000);
 }
 
 void send_to_phant() {
