@@ -68,16 +68,16 @@ int one_wire_detect() {
 }
 
 void setup() {
-	// Set the oboard RGB LED to 25% brightness
-	RGB.control(true);
-	RGB.brightness(64);
-	RGB.control(false);
-	
+    // Set the oboard RGB LED to 25% brightness
+    RGB.control(true);
+    RGB.brightness(64);
+    RGB.control(false);
+    
 #ifdef WITH_DALLAS
     ds.reset_search();
     // TODO Probably want to issue a reset to all the 1-wire sensors?
 #endif
-
+    
     Particle.variable("temperature", temperature);
     Particle.variable("humidity"   , humidity);
     Particle.variable("analog0"    , analog0);
@@ -91,12 +91,12 @@ void setup() {
     //IPAddress myNetMask = WiFi.subnetMask();
     //Particle.publish("device-ip", String(myIP) + "/" + String(myNetMask));
     
-	dht.begin();
-	
-	if (!bme.begin(0x76)) {
-	    Particle.publish("No bme at 0x76");
-	    while (1) delay(1000);
-	};
+    dht.begin();
+    
+    if (!bme.begin(0x76)) {
+        Particle.publish("No bme at 0x76");
+        while (1) delay(1000);
+    };
 }
 
 void pause_loop();
