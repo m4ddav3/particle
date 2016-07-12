@@ -5,7 +5,7 @@
 #include "OneWire/OneWire.h"
 #endif
 
-#include "SparkFun-Spark-Phant/SparkFun-Spark-Phant.h"
+//#include "SparkFun-Spark-Phant/SparkFun-Spark-Phant.h"
 #include "Adafruit_DHT/Adafruit_DHT.h"
 #include "Adafruit_BME280/Adafruit_BME280.h"
 
@@ -39,12 +39,12 @@ OneWireAddress ds_sensors[4] = {
 void collect_ds_temps();
 #endif
 
-const char server[] = "192.168.1.88";
-#define PORT 8080
-const char publicKey[]  = "db8bQQj2eAFDgK1w9NQJIj2Popr";
-const char privateKey[] = "eeWeyy0MgLHnDOvPGqBYImyjnl9";
-const char deleteKey[]  = "wNPNddRkx0hGe8o3lEQWHzaygYX";
-Phant phant(server, publicKey, privateKey);
+//const char server[] = "192.168.1.88";
+//#define PORT 8080
+//const char publicKey[]  = "db8bQQj2eAFDgK1w9NQJIj2Popr";
+//const char privateKey[] = "eeWeyy0MgLHnDOvPGqBYImyjnl9";
+//const char deleteKey[]  = "wNPNddRkx0hGe8o3lEQWHzaygYX";
+//Phant phant(server, publicKey, privateKey);
 
 double temperature;
 double humidity;
@@ -100,7 +100,8 @@ void setup() {
 }
 
 void pause_loop();
-void send_to_phant();
+//void send_to_phant();
+void send_to_moth();
 
 int publish_minute = -1;
 
@@ -123,12 +124,15 @@ void loop() {
 #ifdef WITH_DALLAS
         collect_ds_temps();
 #endif
-        send_to_phant();
+        //send_to_phant();
+        
+        // send_to_moth();
     }
     
     delay(5000);
 }
 
+/*
 void send_to_phant() {
     phant.add("dht_temperature", temperature);
     phant.add("dht_humidity", humidity);
@@ -175,7 +179,7 @@ void send_to_phant() {
     
     phant_request = "";
 }
-
+*/
 
 #ifdef WITH_DALLAS
 
